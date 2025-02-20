@@ -9,3 +9,4 @@ SpeechRecognition
 pyttsx3
 pyaudio
 yt-dlp
+langchain_google_genai
