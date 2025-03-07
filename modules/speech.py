@@ -1,8 +1,6 @@
 import pyttsx3
 import speech_recognition as sr
-from logger import CustomLogger
 import threading
-
 
 
 class SpeechModule:
@@ -14,9 +12,6 @@ class SpeechModule:
         """
         Initialize the SpeechModule with TTS engine and recognizer for STT.
         """
-        self.logger = CustomLogger().get_logger()
-        self.logger.info("Initializing SpeechModule.")
-
         # Initialize Text-to-Speech (TTS) engine
         self.tts_engine = pyttsx3.init()
         self.tts_engine.setProperty('rate', 200)
@@ -28,12 +23,11 @@ class SpeechModule:
         Convert text to speech in a separate thread to allow interruption.
         """
         def tts_task():
-            self.logger.info(f"TTS Output: {text}")
             try:
                 self.tts_engine.say(text)
                 self.tts_engine.runAndWait()
             except Exception as e:
-                self.logger.error(f"Error in TTS: {e}")
+                print(f"Error in TTS: {e}")  # Print error instead of logging
 
         # Stop any ongoing TTS before starting a new one
         self.stop_tts()
@@ -47,6 +41,7 @@ class SpeechModule:
         Stop any ongoing TTS operation.
         """
         if self.tts_thread and self.tts_thread.is_alive():
-            self.logger.info("Stopping TTS...")
             self.tts_engine.stop()
             self.tts_thread.join()
+
+

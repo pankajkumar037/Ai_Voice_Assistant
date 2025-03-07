@@ -1,56 +1,49 @@
 from langchain.prompts import PromptTemplate
-from langchain_groq import ChatGroq
+from langchain.memory import ConversationBufferWindowMemory
 from langchain.chains import LLMChain
-from langchain.memory import ConversationBufferMemory
-from logger import CustomLogger  # Import CustomLogger
-from prompts.qna_prompts import qna_prompy_template
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+import sys
+import os
+
+# Ensure Python recognizes the parent directory
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from prompts11.qna_prompts import system_prompts
 
 
-class QnAModule:
+def handle_qna(user_input, google_api_key):
     """
-    Handles Q&A functionality.
+    Handles user queries for Q&A functionality.
     """
+    try:
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash", 
+            temperature=0.5, 
+            max_tokens=100, 
+            api_key=google_api_key
+        ) 
 
-    def __init__(self, api_key):
-        """
-        Initialize the QnA module.
-        """
-        # Initialize logger
-        self.logger = CustomLogger().get_logger()
-        self.logger.info("Initializing QnAModule.")
+        memory = ConversationBufferWindowMemory(window_size=10)
 
-        # Initialize Groq LLM
-        self.llm = ChatGroq(
-            api_key=api_key,
-            model="llama3-8b-8192",
-            temperature=0.6,
-            max_tokens=None,
-            timeout=None,
-            max_retries=2,
+        prompt = PromptTemplate(
+            template=system_prompts(),  
+            input_variables=["question"]
         )
-        self.logger.info("Groq LLM initialized for QnA module.")
 
-        # Custom Prompt
-        self.prompt = qna_prompy_template
-        self.logger.info("Custom prompt initialized for QnA module.")
+        chain = LLMChain(
+            prompt=prompt,
+            memory=memory,
+            llm=llm
+        )
 
-        # Initialize memory
-        self.memory = ConversationBufferMemory(memory_key="history", input_key="question")
-        self.logger.info("Conversation memory initialized for QnA module.")
+        response = chain.run(user_input)  
+        return response
 
-        # Create chain with memory
-        self.qa_chain = LLMChain(llm=self.llm, prompt=self.prompt, memory=self.memory)
-        self.logger.info("LLMChain created with memory for QnA module.")
+    except Exception as e:
+        return f"An error occurred while processing your question: {e}"
 
-    def handle_qna(self, user_input):
-        """
-        Handles user queries for Q&A functionality.
-        """
-        self.logger.info(f"Received user query: {user_input}")
-        try:
-            response = self.qa_chain.run(user_input)
-            self.logger.info(f"Response generated: {response}")
-            return response
-        except Exception as e:
-            self.logger.error(f"An error occurred while processing the question: {e}")
-            return f"An error occurred while processing your question: {e}"
+
+# if __name__ == "__main__":
+#     API_KEY = "AIzaSyAwMqy6yqO0czghcmiljDOw-cgrTELItEM"  
+#     print(handle_qna("What is the capital of India?", API_KEY))
